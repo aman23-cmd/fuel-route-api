@@ -1,0 +1,13 @@
+{
+  "info": {"name": "Fuel Route API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+  "variable": [{"key": "base", "value": "http://127.0.0.1:8000"}],
+  "item": [
+    {"name": "Dallas -> Chicago", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base}}/api/route/", "body": {"mode": "raw", "raw": "{\n  \"start\": \"Dallas, TX\",\n  \"finish\": \"Chicago, IL\"\n}"}}},
+    {"name": "Los Angeles -> New York (multi-stop)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base}}/api/route/", "body": {"mode": "raw", "raw": "{\n  \"start\": \"Los Angeles, CA\",\n  \"finish\": \"New York, NY\"\n}"}}},
+    {"name": "Coordinates input", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base}}/api/route/", "body": {"mode": "raw", "raw": "{\n  \"start\": \"34.05,-118.24\",\n  \"finish\": \"40.71,-74.00\"\n}"}}},
+    {"name": "Map (open in browser)", "request": {"method": "GET", "url": "{{base}}/api/route/map/?start=Seattle, WA&finish=Miami, FL"}}
+  ]
+}

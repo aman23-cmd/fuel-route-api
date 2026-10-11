@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Fuel route</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  html,body{height:100%;margin:0;font-family:system-ui,sans-serif}
+  #map{position:absolute;inset:0 0 0 340px}
+  #panel{position:absolute;inset:0 auto 0 0;width:340px;overflow:auto;padding:16px;box-sizing:border-box;background:#fafafa;border-right:1px solid #ddd}
+  h1{font-size:18px;margin:0 0 4px} .muted{color:#666;font-size:13px}
+  .total{font-size:28px;font-weight:700;margin:10px 0 2px}
+  .stop{border-top:1px solid #e3e3e3;padding:8px 0;font-size:13px;cursor:pointer}
+  .stop b{display:block;font-size:14px}
+  .err{padding:24px;color:#b00020}
+  @media(max-width:700px){#map{inset:260px 0 0 0}#panel{width:100%;height:260px;inset:0 0 auto 0}}
+</style>
+</head>
+<body>
+{% if error %}
+  <div class="err"><b>Could not build route.</b><br>{{ error }}</div>
+{% else %}
+  <div id="panel">
+    <h1>{{ result.start.label }} &rarr; {{ result.finish.label }}</h1>
+    <div class="muted">{{ result.route.distance_miles }} mi &middot; {{ result.route.duration_hours }} h driving</div>
+    <div class="total">${{ result.summary.total_fuel_cost }}</div>
+    <div class="muted">{{ result.summary.total_gallons }} gal &middot; {{ result.summary.number_of_fuel_stops }} fuel stop(s)
+      &middot; {{ result.summary.assumptions.mpg }} mpg &middot; {{ result.summary.assumptions.max_range_miles }} mi range</div>
+    <div id="stops"></div>
+  </div>
+  <div id="map"></div>
+  {{ result|json_script:"data" }}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const r = JSON.parse(document.getElementById("data").textContent);
+    const map = L.map("map");
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {maxZoom: 18, attribution: "&copy; OpenStreetMap contributors"}).addTo(map);
+    const line = L.geoJSON(r.route.geometry, {style: {color: "#1769e0", weight: 5}}).addTo(map);
+    map.fitBounds(line.getBounds(), {padding: [30, 30]});
+    const dot = (c) => L.divIcon({className: "", html: `<div style="width:16px;height:16px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 0 3px #000"></div>`, iconSize: [16, 16], iconAnchor: [8, 8]});
+    L.marker([r.start.latitude, r.start.longitude], {icon: dot("#2e7d32")}).addTo(map).bindPopup("Start: " + r.start.label);
+    L.marker([r.finish.latitude, r.finish.longitude], {icon: dot("#c62828")}).addTo(map).bindPopup("Finish: " + r.finish.label);
+    const box = document.getElementById("stops");
+    r.fuel_stops.forEach((s, i) => {
+      const html = `<b>${i + 1}. ${s.name}</b>${s.city}, ${s.state} &middot; mile ${s.route_mile}<br>` +
+                   `${s.gallons} gal @ $${s.price_per_gallon.toFixed(3)} = <b style="display:inline">$${s.cost.toFixed(2)}</b>`;
+      const m = L.marker([s.latitude, s.longitude]).addTo(map).bindPopup(html);
+      const el = document.createElement("div"); el.className = "stop"; el.innerHTML = html;
+      el.onclick = () => { map.setView([s.latitude, s.longitude], 9); m.openPopup(); };
+      box.appendChild(el);
+    });
+  </script>
+{% endif %}
+</body>
+</html>
